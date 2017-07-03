@@ -309,14 +309,68 @@ def make_table_cell_border_string(thick=None, line=None, color=None):
 def odf_create_table_cell_style(border=None, border_top=None,
                                 border_bottom=None,
                                 border_left=None, border_right=None,
+                                padding=None, padding_top=None,
+                                padding_bottom=None,
+                                padding_left=None, padding_right=None,
                                 background_color=None, shadow=None,
                                 color=None):
-                                #parent='Standard'):
+    """Returns a cell style.
+
+    The borders arguments must be some style attribute strings or None, see the
+    method 'make_table_cell_border_string' to generate them.
+    If the 'border' argument as the value 'default', the default style
+    "0.06pt solid #000000" is used for the 4 borders.
+    If any value is used for border, it is used for the 4 borders, else any of
+    the 4 borders can be specified by it's own string. If all the border,
+    border_top, border_bottom, ... arguments are None, an empty border is used
+    (ODF value is fo:border="none").
+
+    Padding arguments are string specifying a length (e.g. "0.5mm")". If
+    'padding' is provided, it is used for the 4 sides, else any of
+    the 4 sides padding can be specified by it's own string. Default padding is
+    no padding.
+
+    Arguments:
+
+        border -- str, style string for borders on four sides
+
+        border_top -- str, style string for top if no 'border' argument
+
+        border_bottom -- str, style string for bottom if no 'border' argument
+
+        border_left -- str, style string for left if no 'border' argument
+
+        border_right -- str, style string for right if no 'border' argument
+
+        padding -- str, style string for padding on four sides
+
+        padding_top -- str, style string for top if no 'padding' argument
+
+        padding_bottom -- str, style string for bottom if no 'padding' argument
+
+        padding_left -- str, style string for left if no 'padding' argument
+
+        padding_right -- str, style string for right if no 'padding' argument
+
+        background_color -- str or rgb 3-tuple, str is 'black', 'grey', ... or '#012345'
+
+        shadow -- str, e.g. "#808080 0.176cm 0.176cm"
+
+        color -- str or rgb 3-tuple, str is 'black', 'grey', ... or '#012345'
+
+    Returns : odf_style
+    """
+    if border == 'default':
+        border = make_table_cell_border_string()    # default border
     if border is not None:
+        # use the border value for 4 sides.
         border_bottom = border_top = border_left = border_right = None
     if (border is None and border_bottom is None and border_top is None
         and border_left is None and border_right is None):
-        border = make_table_cell_border_string()    # default border
+        border = 'none'
+    if padding is not None:
+        # use the padding value for 4 sides.
+        padding_bottom = padding_top = padding_left = padding_right = None
     if color:
         color_string = __make_color_string(color)
     if background_color:
@@ -324,10 +378,16 @@ def odf_create_table_cell_style(border=None, border_top=None,
     else:
         bgcolor_string = None
     cell_style = odf_create_style('table-cell', area='table-cell',
-                                  border=border, border_top=border_top,
+                                  border=border,
+                                  border_top=border_top,
                                   border_bottom=border_bottom,
                                   border_left=border_left,
                                   border_right=border_right,
+                                  padding=padding,
+                                  padding_top=padding_top,
+                                  padding_bottom=padding_bottom,
+                                  padding_left=padding_left,
+                                  padding_right=padding_right,
                                   background_color=bgcolor_string,
                                   shadow=shadow)
     if color:
@@ -347,7 +407,8 @@ def odf_create_style(family, name=None, display_name=None, parent=None,
         page_layout=None, next_style=None,
         # For family 'table-cell'
         data_style=None, border=None, border_top=None, border_right=None,
-        border_bottom=None, border_left=None, shadow=None,
+        border_bottom=None, border_left=None, padding=None, padding_top=None,
+        padding_bottom=None, padding_left=None, padding_right=None, shadow=None,
         # For family 'table-row'
         height=None, use_optimal_height=None,
         # For family 'table-column'
@@ -406,6 +467,9 @@ def odf_create_style(family, name=None, display_name=None, parent=None,
 
         border, border_top, border_right, border_bottom, border_left -- str,
         e.g. "0.002cm solid #000000" or 'none'
+
+        padding, padding_top, padding_right, padding_bottom, padding_left -- str,
+        e.g. "0.002cm" or 'none'
 
         shadow -- str, e.g. "#808080 0.176cm 0.176cm"
 
@@ -476,6 +540,17 @@ def odf_create_style(family, name=None, display_name=None, parent=None,
             kw['fo:border-right'] = border_right or 'none'
             kw['fo:border-bottom'] = border_bottom or 'none'
             kw['fo:border-left'] = border_left or 'none'
+        else: # no border_top, ... neither border are defined
+            pass  # left untouched
+        if padding:
+            kw['fo:padding'] = padding
+        elif padding_top or padding_right or padding_bottom or padding_left:
+            kw['fo:padding-top'] = padding_top or 'none'
+            kw['fo:padding-right'] = padding_right or 'none'
+            kw['fo:padding-bottom'] = padding_bottom or 'none'
+            kw['fo:padding-left'] = padding_left or 'none'
+        else: # no border_top, ... neither border are defined
+            pass  # left untouched
         if shadow:
             kw['style:shadow'] = shadow
         if background_color:
@@ -487,6 +562,8 @@ def odf_create_style(family, name=None, display_name=None, parent=None,
         if use_optimal_height is not None:
             kw['style:use-optimal-row-height'] = Boolean.encode(
                     use_optimal_height)
+        if background_color:
+            kw['fo:background-color'] = background_color
     # Table column
     elif area == 'table-column':
         if width:
